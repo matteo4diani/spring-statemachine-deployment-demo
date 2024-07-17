@@ -15,8 +15,6 @@ import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
-import org.springframework.statemachine.listener.StateMachineListenerAdapter;
-import org.springframework.statemachine.state.State;
 
 @Configuration
 @EnableStateMachineFactory
@@ -69,13 +67,5 @@ public class ApplicationStateMachineConfiguration extends StateMachineConfigurer
                     .target(ApplicationStates.DELETED)
                     .event(ApplicationEvents.NAMESPACE_STATUS_CHANGE)
                     .guard(context -> true); // check K8s API against descriptor
-    }
-}
-
-@Slf4j
-class ApplicationStateMachineListener extends StateMachineListenerAdapter<ApplicationStates, ApplicationEvents> {
-    @Override
-    public void stateChanged(State<ApplicationStates, ApplicationEvents> from, State<ApplicationStates, ApplicationEvents> to) {
-        log.info("State changed from {} to {}", from.getId().name(), to.getId().name());
     }
 }

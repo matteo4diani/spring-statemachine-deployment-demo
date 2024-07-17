@@ -1,6 +1,7 @@
 package dev.sashacorp.statemachine.machine.service;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,8 +34,15 @@ public class ApplicationStateMachineService implements CustomStateMachineService
         return getStateMachine(machineId);
     }
 
-    private StateMachine<ApplicationStates, ApplicationEvents> getStateMachine(String machineId) {
-        return stateMachines.get(machineId);
+    @Override
+    public Optional<StateMachine<ApplicationStates, ApplicationEvents>> acquireExistingStateMachine(String machineId) {
+        if (!stateMachines.containsKey(machineId))
+            return Optional.empty();
+
+        if (Objects.isNull(getStateMachine(machineId)))
+            return Optional.empty();
+
+        return Optional.ofNullable(getStateMachine(machineId));
     }
 
     @Override
@@ -48,22 +56,36 @@ public class ApplicationStateMachineService implements CustomStateMachineService
             return;
         }
 
-        if (Objects.isNull(getStateMachine(machineId))) {
-            stateMachines.remove(machineId);
-        }
+        final var stateMachine = stateMachines.remove(machineId);
 
-        getStateMachine(machineId).stopReactively().block();
+        if (Objects.isNull(stateMachine))
+            return;
 
-        stateMachines.remove(machineId);
+        stateMachine.stopReactively().block();
     }
 
     @Override
-    public Set<String> getAllStateMachines() {
+    public Set<String> getStateMachineIds() {
         return stateMachines.keySet();
+    }
+
+    @Override
+    public Optional<ApplicationStates> getState(String machineId) {
+        if (!stateMachines.containsKey(machineId))
+            return Optional.empty();
+
+        if (Objects.isNull(getStateMachine(machineId)))
+            return Optional.empty();
+
+        return Optional.ofNullable(getStateMachine(machineId).getState().getId());
     }
 
     @Override
     public void releaseStateMachine(String machineId, boolean stop) {
         releaseStateMachine(machineId);
+    }
+
+    private StateMachine<ApplicationStates, ApplicationEvents> getStateMachine(String machineId) {
+        return stateMachines.get(machineId);
     }
 }

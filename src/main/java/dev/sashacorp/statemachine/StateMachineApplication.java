@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class StatemachineApplication {
+public class StateMachineApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(StatemachineApplication.class, args);
+		SpringApplication.run(StateMachineApplication.class, args);
 	}
 
 }

@@ -1,5 +1,6 @@
 package dev.sashacorp.statemachine.machine.service;
 
+import java.util.Optional;
 import java.util.Set;
 
 import dev.sashacorp.statemachine.machine.model.events.ApplicationEvents;
@@ -11,8 +12,12 @@ public interface CustomStateMachineService extends StateMachineService<Applicati
     @Override
     StateMachine<ApplicationStates, ApplicationEvents> acquireStateMachine(String machineId);
 
+    Optional<StateMachine<ApplicationStates, ApplicationEvents>> acquireExistingStateMachine(String machineId);
+
     @Override
     void releaseStateMachine(String machineId);
 
-    Set<String> getAllStateMachines();
+    Set<String> getStateMachineIds();
+
+    Optional<ApplicationStates> getState(String machineId);
 }
