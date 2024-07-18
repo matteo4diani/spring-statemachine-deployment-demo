@@ -10,9 +10,10 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.statemachine.test.StateMachineTestPlan;
 import org.springframework.statemachine.test.StateMachineTestPlanBuilder;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.DirtiesContext.ClassMode;
 
 @SpringBootTest(classes = ApplicationStateMachineConfiguration.class)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
+@DirtiesContext(classMode = ClassMode.BEFORE_EACH_TEST_METHOD)
 class ApplicationStateMachineIT {
 
   @SpyBean
