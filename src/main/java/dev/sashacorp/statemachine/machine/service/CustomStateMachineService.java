@@ -24,4 +24,9 @@ public interface CustomStateMachineService
   Set<String> getStateMachineIds();
 
   Optional<ApplicationStates> getState(String machineId);
+
+  StateMachine<ApplicationStates, ApplicationEvents> sendEvent(
+    String machineId,
+    ApplicationEvents event
+  );
 }

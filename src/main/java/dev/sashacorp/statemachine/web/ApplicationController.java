@@ -54,7 +54,10 @@ public class ApplicationController {
   ) {
     final var stateMachine = stateMachineService.acquireStateMachine(id);
 
-    sendEvent(stateMachine, ApplicationEvents.DEPLOY);
+    stateMachineService.sendEvent(
+      stateMachine.getId(),
+      ApplicationEvents.DEPLOY
+    );
 
     return getStringResponseEntity(
       "Created state machine with id [{0}] and status [{1}]",
@@ -66,11 +69,10 @@ public class ApplicationController {
   public ResponseEntity<String> deleteApplication(
     @PathVariable("id") String id
   ) {
-    final var stateMachine = stateMachineService
-      .acquireExistingStateMachine(id)
-      .orElseThrow();
-
-    sendEvent(stateMachine, ApplicationEvents.DELETE);
+    final var stateMachine = stateMachineService.sendEvent(
+      id,
+      ApplicationEvents.DELETE
+    );
 
     return getStringResponseEntity(
       "Deleting state machine with id [{0}] and status [{1}]",
@@ -83,11 +85,7 @@ public class ApplicationController {
     @PathVariable("id") String id,
     @RequestParam("event") ApplicationEvents event
   ) {
-    final var stateMachine = stateMachineService
-      .acquireExistingStateMachine(id)
-      .orElseThrow();
-
-    sendEvent(stateMachine, event);
+    final var stateMachine = stateMachineService.sendEvent(id, event);
 
     return getStringResponseEntity(
       "State machine with id [{0}] is now in status [{1}]",
@@ -112,15 +110,6 @@ public class ApplicationController {
         format("Released state machine with id [{0}]", stateMachine.getId())
       )
     );
-  }
-
-  private void sendEvent(
-    StateMachine<ApplicationStates, ApplicationEvents> stateMachine,
-    ApplicationEvents event
-  ) {
-    stateMachine
-      .sendEvent(Mono.just(MessageBuilder.withPayload(event).build()))
-      .subscribe();
   }
 
   private ResponseEntity getStringResponseEntity(

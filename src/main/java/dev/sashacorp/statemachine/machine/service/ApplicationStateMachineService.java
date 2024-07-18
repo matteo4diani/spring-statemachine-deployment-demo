@@ -6,8 +6,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.config.StateMachineFactory;
+import reactor.core.publisher.Mono;
 
 public class ApplicationStateMachineService
   implements CustomStateMachineService {
@@ -88,6 +90,21 @@ public class ApplicationStateMachineService
   @Override
   public void releaseStateMachine(String machineId, boolean stop) {
     releaseStateMachine(machineId);
+  }
+
+  @Override
+  public StateMachine<ApplicationStates, ApplicationEvents> sendEvent(
+    String machineId,
+    ApplicationEvents event
+  ) {
+    final var stateMachine = acquireExistingStateMachine(machineId)
+      .orElseThrow();
+
+    stateMachine
+      .sendEvent(Mono.just(MessageBuilder.withPayload(event).build()))
+      .subscribe();
+
+    return stateMachine;
   }
 
   private StateMachine<ApplicationStates, ApplicationEvents> getStateMachine(
