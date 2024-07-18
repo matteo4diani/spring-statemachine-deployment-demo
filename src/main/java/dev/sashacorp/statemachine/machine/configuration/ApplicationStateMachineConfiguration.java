@@ -4,10 +4,11 @@ import dev.sashacorp.statemachine.machine.model.events.ApplicationEvents;
 import dev.sashacorp.statemachine.machine.model.states.ApplicationStates;
 import dev.sashacorp.statemachine.machine.service.ApplicationStateMachineService;
 import dev.sashacorp.statemachine.machine.service.CustomStateMachineService;
-import java.util.EnumSet;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.statemachine.boot.support.BootStateMachineMonitor;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.StateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.StateMachineFactory;
@@ -21,6 +22,14 @@ import org.springframework.statemachine.config.builders.StateMachineTransitionCo
 public class ApplicationStateMachineConfiguration
   extends StateMachineConfigurerAdapter<ApplicationStates, ApplicationEvents> {
 
+  private final BootStateMachineMonitor<ApplicationStates, ApplicationEvents> stateMachineMonitor;
+
+  public ApplicationStateMachineConfiguration(
+    BootStateMachineMonitor<ApplicationStates, ApplicationEvents> stateMachineMonitor
+  ) {
+    this.stateMachineMonitor = stateMachineMonitor;
+  }
+
   @Bean
   public CustomStateMachineService stateMachineService(
     StateMachineFactory<ApplicationStates, ApplicationEvents> stateMachineFactory
@@ -32,10 +41,9 @@ public class ApplicationStateMachineConfiguration
   public void configure(
     StateMachineConfigurationConfigurer<ApplicationStates, ApplicationEvents> config
   ) throws Exception {
-    config
-      .withConfiguration()
-      .autoStartup(false)
-      .listener(new ApplicationStateMachineListener());
+    config.withMonitoring().monitor(stateMachineMonitor);
+
+    config.withConfiguration().autoStartup(false);
   }
 
   @Override
@@ -45,8 +53,14 @@ public class ApplicationStateMachineConfiguration
     states
       .withStates()
       .initial(ApplicationStates.READY)
-      .states(EnumSet.allOf(ApplicationStates.class))
-      .end(ApplicationStates.DELETED);
+      .end(ApplicationStates.DELETED)
+      .states(
+        Set.of(
+          ApplicationStates.DEPLOYING,
+          ApplicationStates.DEPLOYED,
+          ApplicationStates.DELETING
+        )
+      );
   }
 
   @Override
