@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.statemachine.StateMachine;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,14 +41,10 @@ public class ApplicationController {
     final var stateMachine = stateMachineService
       .acquireExistingStateMachine(id)
       .orElseThrow();
-    return ResponseEntity.of(
-      Optional.of(
-        format(
-          "State machine with id [{0}] has status [{1}]",
-          stateMachine.getId(),
-          stateMachine.getState().getId()
-        )
-      )
+
+    return getStringResponseEntity(
+      "State machine with id [{0}] has status [{1}]",
+      stateMachine
     );
   }
 
@@ -56,19 +53,12 @@ public class ApplicationController {
     @PathVariable("id") String id
   ) {
     final var stateMachine = stateMachineService.acquireStateMachine(id);
-    stateMachine
-      .sendEvent(
-        Mono.just(MessageBuilder.withPayload(ApplicationEvents.DEPLOY).build())
-      )
-      .subscribe();
-    return ResponseEntity.of(
-      Optional.of(
-        format(
-          "Created state machine with id [{0}] and status [{1}]",
-          stateMachine.getId(),
-          stateMachine.getState().getId()
-        )
-      )
+
+    sendEvent(stateMachine, ApplicationEvents.DEPLOY);
+
+    return getStringResponseEntity(
+      "Created state machine with id [{0}] and status [{1}]",
+      stateMachine
     );
   }
 
@@ -79,19 +69,12 @@ public class ApplicationController {
     final var stateMachine = stateMachineService
       .acquireExistingStateMachine(id)
       .orElseThrow();
-    stateMachine
-      .sendEvent(
-        Mono.just(MessageBuilder.withPayload(ApplicationEvents.DELETE).build())
-      )
-      .subscribe();
-    return ResponseEntity.of(
-      Optional.of(
-        format(
-          "Deleting state machine with id [{0}] and status [{1}]",
-          stateMachine.getId(),
-          stateMachine.getState().getId()
-        )
-      )
+
+    sendEvent(stateMachine, ApplicationEvents.DELETE);
+
+    return getStringResponseEntity(
+      "Deleting state machine with id [{0}] and status [{1}]",
+      stateMachine
     );
   }
 
@@ -103,17 +86,12 @@ public class ApplicationController {
     final var stateMachine = stateMachineService
       .acquireExistingStateMachine(id)
       .orElseThrow();
-    stateMachine
-      .sendEvent(Mono.just(MessageBuilder.withPayload(event).build()))
-      .subscribe();
-    return ResponseEntity.of(
-      Optional.of(
-        format(
-          "State machine with id [{0}] is now in status [{1}]",
-          stateMachine.getId(),
-          stateMachine.getState().getId()
-        )
-      )
+
+    sendEvent(stateMachine, event);
+
+    return getStringResponseEntity(
+      "State machine with id [{0}] is now in status [{1}]",
+      stateMachine
     );
   }
 
@@ -132,6 +110,30 @@ public class ApplicationController {
     return ResponseEntity.of(
       Optional.of(
         format("Released state machine with id [{0}]", stateMachine.getId())
+      )
+    );
+  }
+
+  private void sendEvent(
+    StateMachine<ApplicationStates, ApplicationEvents> stateMachine,
+    ApplicationEvents event
+  ) {
+    stateMachine
+      .sendEvent(Mono.just(MessageBuilder.withPayload(event).build()))
+      .subscribe();
+  }
+
+  private ResponseEntity getStringResponseEntity(
+    String messagePattern,
+    StateMachine stateMachine
+  ) {
+    return ResponseEntity.of(
+      Optional.of(
+        format(
+          messagePattern,
+          stateMachine.getId(),
+          stateMachine.getState().getId()
+        )
       )
     );
   }

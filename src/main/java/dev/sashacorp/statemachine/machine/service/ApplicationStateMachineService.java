@@ -26,18 +26,12 @@ public class ApplicationStateMachineService
   public StateMachine<ApplicationStates, ApplicationEvents> acquireStateMachine(
     String machineId
   ) {
-    if (!stateMachines.containsKey(machineId)) {
-      stateMachines.put(
-        machineId,
-        stateMachineFactory.getStateMachine(machineId)
-      );
+    if (doesNotContainStateMachine(machineId)) {
+      putStateMachine(machineId);
     }
 
-    if (Objects.isNull(getStateMachine(machineId))) {
-      stateMachines.put(
-        machineId,
-        stateMachineFactory.getStateMachine(machineId)
-      );
+    if (containsNullStateMachine(machineId)) {
+      putStateMachine(machineId);
     }
 
     getStateMachine(machineId).startReactively().block();
@@ -49,9 +43,9 @@ public class ApplicationStateMachineService
   public Optional<StateMachine<ApplicationStates, ApplicationEvents>> acquireExistingStateMachine(
     String machineId
   ) {
-    if (!stateMachines.containsKey(machineId)) return Optional.empty();
+    if (doesNotContainStateMachine(machineId)) return Optional.empty();
 
-    if (Objects.isNull(getStateMachine(machineId))) return Optional.empty();
+    if (containsNullStateMachine(machineId)) return Optional.empty();
 
     return Optional.ofNullable(getStateMachine(machineId));
   }
@@ -66,7 +60,7 @@ public class ApplicationStateMachineService
 
   @Override
   public void releaseStateMachine(String machineId) {
-    if (!stateMachines.containsKey(machineId)) {
+    if (doesNotContainStateMachine(machineId)) {
       return;
     }
 
@@ -84,9 +78,9 @@ public class ApplicationStateMachineService
 
   @Override
   public Optional<ApplicationStates> getState(String machineId) {
-    if (!stateMachines.containsKey(machineId)) return Optional.empty();
+    if (doesNotContainStateMachine(machineId)) return Optional.empty();
 
-    if (Objects.isNull(getStateMachine(machineId))) return Optional.empty();
+    if (containsNullStateMachine(machineId)) return Optional.empty();
 
     return Optional.ofNullable(getStateMachine(machineId).getState().getId());
   }
@@ -100,5 +94,20 @@ public class ApplicationStateMachineService
     String machineId
   ) {
     return stateMachines.get(machineId);
+  }
+
+  private void putStateMachine(String machineId) {
+    stateMachines.put(
+      machineId,
+      stateMachineFactory.getStateMachine(machineId)
+    );
+  }
+
+  private boolean doesNotContainStateMachine(String machineId) {
+    return !stateMachines.containsKey(machineId);
+  }
+
+  private boolean containsNullStateMachine(String machineId) {
+    return Objects.isNull(getStateMachine(machineId));
   }
 }
