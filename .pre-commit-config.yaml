@@ -1,0 +1,24 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+        exclude: ^.*(invalid|not_a_json).*\.json$
+      - id: check-xml
+        exclude: ^.*invalid.*\.xml$
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.0-alpha.6
+    hooks:
+      - id: prettier
+        types_or:
+          - java
+          - markdown
+        additional_dependencies:
+          - prettier@2.7.1
+          - prettier-plugin-java@1.4.0
