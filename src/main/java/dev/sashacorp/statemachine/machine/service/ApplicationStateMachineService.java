@@ -107,6 +107,21 @@ public class ApplicationStateMachineService
     return stateMachine;
   }
 
+  @Override
+  public StateMachine<ApplicationStates, ApplicationEvents> sendEvents(
+    String machineId,
+    ApplicationEvents... events
+  ) {
+    final var stateMachine = acquireExistingStateMachine(machineId)
+      .orElseThrow();
+
+    for (ApplicationEvents event : events) {
+      sendEvent(machineId, event);
+    }
+
+    return stateMachine;
+  }
+
   private StateMachine<ApplicationStates, ApplicationEvents> getStateMachine(
     String machineId
   ) {
