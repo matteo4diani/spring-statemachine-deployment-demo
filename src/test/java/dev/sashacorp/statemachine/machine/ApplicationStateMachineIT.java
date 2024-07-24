@@ -1,5 +1,6 @@
 package dev.sashacorp.statemachine.machine;
 
+import dev.sashacorp.statemachine.machine.configuration.ApplicationConfiguration;
 import dev.sashacorp.statemachine.machine.configuration.ApplicationStateMachineConfiguration;
 import dev.sashacorp.statemachine.machine.model.events.ApplicationEvents;
 import dev.sashacorp.statemachine.machine.model.states.ApplicationStates;
@@ -16,7 +17,11 @@ import org.springframework.statemachine.test.StateMachineTestPlanBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
 
-@SpringBootTest(classes = { ApplicationStateMachineConfiguration.class })
+@SpringBootTest(
+  classes = {
+    ApplicationStateMachineConfiguration.class, ApplicationConfiguration.class,
+  }
+)
 @DirtiesContext(classMode = ClassMode.BEFORE_EACH_TEST_METHOD)
 class ApplicationStateMachineIT {
 

@@ -2,8 +2,8 @@ package dev.sashacorp.statemachine.machine.configuration;
 
 import dev.sashacorp.statemachine.machine.model.events.ApplicationEvents;
 import dev.sashacorp.statemachine.machine.model.states.ApplicationStates;
+import dev.sashacorp.statemachine.machine.service.ApplicationService;
 import dev.sashacorp.statemachine.machine.service.ApplicationStateMachineService;
-import dev.sashacorp.statemachine.machine.service.CustomStateMachineService;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -23,15 +23,18 @@ public class ApplicationStateMachineConfiguration
   extends StateMachineConfigurerAdapter<ApplicationStates, ApplicationEvents> {
 
   private final BootStateMachineMonitor<ApplicationStates, ApplicationEvents> stateMachineMonitor;
+  private final ApplicationService applicationService;
 
   public ApplicationStateMachineConfiguration(
-    BootStateMachineMonitor<ApplicationStates, ApplicationEvents> stateMachineMonitor
+    BootStateMachineMonitor<ApplicationStates, ApplicationEvents> stateMachineMonitor,
+    ApplicationService applicationService
   ) {
     this.stateMachineMonitor = stateMachineMonitor;
+    this.applicationService = applicationService;
   }
 
   @Bean
-  public CustomStateMachineService stateMachineService(
+  public ApplicationStateMachineService applicationStateMachineService(
     StateMachineFactory<ApplicationStates, ApplicationEvents> stateMachineFactory
   ) {
     return new ApplicationStateMachineService(stateMachineFactory);
@@ -78,7 +81,11 @@ public class ApplicationStateMachineConfiguration
       .source(ApplicationStates.DEPLOYING)
       .target(ApplicationStates.DEPLOYED)
       .event(ApplicationEvents.NAMESPACE_STATUS_CHANGE)
-      .guard(context -> true) // check K8s API against descriptor
+      .guard(context ->
+        this.applicationService.isFullyDeployed(
+            context.getStateMachine().getId()
+          )
+      ) // check K8s API against descriptor
       .and()
       .withExternal()
       .source(ApplicationStates.DEPLOYED)
@@ -89,6 +96,10 @@ public class ApplicationStateMachineConfiguration
       .source(ApplicationStates.DELETING)
       .target(ApplicationStates.DELETED)
       .event(ApplicationEvents.NAMESPACE_STATUS_CHANGE)
-      .guard(context -> true); // check K8s API against descriptor
+      .guard(context ->
+        this.applicationService.isFullyDeleted(
+            context.getStateMachine().getId()
+          )
+      ); // check K8s API against descriptor
   }
 }
