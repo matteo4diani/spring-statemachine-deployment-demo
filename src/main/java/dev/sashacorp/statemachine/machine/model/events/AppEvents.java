@@ -1,13 +1,13 @@
 package dev.sashacorp.statemachine.machine.model.events;
 
-public enum ApplicationEvents {
+public enum AppEvents {
   DEPLOY(ApplicationEventTypes.USER_COMMAND),
   DELETE(ApplicationEventTypes.USER_COMMAND),
   NAMESPACE_STATUS_CHANGE(ApplicationEventTypes.KUBERNETES_EVENT);
 
   private final ApplicationEventTypes eventType;
 
-  ApplicationEvents(ApplicationEventTypes eventType) {
+  AppEvents(ApplicationEventTypes eventType) {
     this.eventType = eventType;
   }
 

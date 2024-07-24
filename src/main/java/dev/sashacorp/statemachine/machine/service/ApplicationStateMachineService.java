@@ -1,31 +1,34 @@
 package dev.sashacorp.statemachine.machine.service;
 
-import dev.sashacorp.statemachine.machine.model.events.ApplicationEvents;
-import dev.sashacorp.statemachine.machine.model.states.ApplicationStates;
+import dev.sashacorp.statemachine.machine.model.application.Application;
+import dev.sashacorp.statemachine.machine.model.events.AppEvents;
+import dev.sashacorp.statemachine.machine.model.states.AppStates;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.config.StateMachineFactory;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 public class ApplicationStateMachineService
   implements CustomStateMachineService {
 
-  private final StateMachineFactory<ApplicationStates, ApplicationEvents> stateMachineFactory;
+  private final StateMachineFactory<AppStates, AppEvents> stateMachineFactory;
 
-  private final ConcurrentHashMap<String, StateMachine<ApplicationStates, ApplicationEvents>> stateMachines = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, StateMachine<AppStates, AppEvents>> stateMachines = new ConcurrentHashMap<>();
 
   public ApplicationStateMachineService(
-    StateMachineFactory<ApplicationStates, ApplicationEvents> stateMachineFactory
+    StateMachineFactory<AppStates, AppEvents> stateMachineFactory
   ) {
     this.stateMachineFactory = stateMachineFactory;
   }
 
   @Override
-  public StateMachine<ApplicationStates, ApplicationEvents> acquireStateMachine(
+  public StateMachine<AppStates, AppEvents> acquireStateMachine(
     String machineId
   ) {
     if (doesNotContainStateMachine(machineId)) {
@@ -42,18 +45,22 @@ public class ApplicationStateMachineService
   }
 
   @Override
-  public Optional<StateMachine<ApplicationStates, ApplicationEvents>> acquireExistingStateMachine(
+  public Optional<StateMachine<AppStates, AppEvents>> acquireExistingStateMachine(
     String machineId
   ) {
-    if (doesNotContainStateMachine(machineId)) return Optional.empty();
+    if (doesNotContainStateMachine(machineId)) {
+      return Optional.empty();
+    }
 
-    if (containsNullStateMachine(machineId)) return Optional.empty();
+    if (containsNullStateMachine(machineId)) {
+      return Optional.empty();
+    }
 
     return Optional.ofNullable(getStateMachine(machineId));
   }
 
   @Override
-  public StateMachine<ApplicationStates, ApplicationEvents> acquireStateMachine(
+  public StateMachine<AppStates, AppEvents> acquireStateMachine(
     String machineId,
     boolean start
   ) {
@@ -66,25 +73,17 @@ public class ApplicationStateMachineService
       return;
     }
 
-    final var stateMachine = stateMachines.remove(machineId);
+    final var stateMachine = getStateMachine(machineId);
 
-    if (Objects.isNull(stateMachine)) return;
+    if (Objects.isNull(stateMachine)) {
+      stateMachines.remove(machineId);
+      return;
+    }
 
-    stateMachine.stopReactively().block();
-  }
-
-  @Override
-  public Set<String> getStateMachineIds() {
-    return stateMachines.keySet();
-  }
-
-  @Override
-  public Optional<ApplicationStates> getState(String machineId) {
-    if (doesNotContainStateMachine(machineId)) return Optional.empty();
-
-    if (containsNullStateMachine(machineId)) return Optional.empty();
-
-    return Optional.ofNullable(getStateMachine(machineId).getState().getId());
+    if (AppStates.DELETED.equals(stateMachine.getState().getId())) {
+      stateMachines.remove(machineId);
+      stateMachine.stopReactively().block();
+    }
   }
 
   @Override
@@ -93,9 +92,36 @@ public class ApplicationStateMachineService
   }
 
   @Override
-  public StateMachine<ApplicationStates, ApplicationEvents> sendEvent(
+  public void setApplication(String machineId) {
+    final var application = new Application(machineId);
+    final var stateMachine = acquireExistingStateMachine(machineId)
+      .orElseThrow();
+
+    stateMachine
+      .getExtendedState()
+      .getVariables()
+      .put(Application.APPLICATION, application);
+  }
+
+  @Override
+  public Application getApplication(String machineId) {
+    final var stateMachine = acquireExistingStateMachine(machineId)
+      .orElseThrow();
+
+    return stateMachine
+      .getExtendedState()
+      .get(Application.APPLICATION, Application.class);
+  }
+
+  @Override
+  public Set<String> getStateMachineIds() {
+    return stateMachines.keySet();
+  }
+
+  @Override
+  public StateMachine<AppStates, AppEvents> sendEvent(
     String machineId,
-    ApplicationEvents event
+    AppEvents event
   ) {
     final var stateMachine = acquireExistingStateMachine(machineId)
       .orElseThrow();
@@ -104,27 +130,29 @@ public class ApplicationStateMachineService
       .sendEvent(Mono.just(MessageBuilder.withPayload(event).build()))
       .subscribe();
 
+    log.info("Event [{}] sent to machine [{}]", event, machineId);
+
     return stateMachine;
   }
 
   @Override
-  public StateMachine<ApplicationStates, ApplicationEvents> sendEvents(
+  public StateMachine<AppStates, AppEvents> sendEvents(
     String machineId,
-    ApplicationEvents... events
+    AppEvents... events
   ) {
     final var stateMachine = acquireExistingStateMachine(machineId)
       .orElseThrow();
 
-    for (ApplicationEvents event : events) {
+    for (AppEvents event : events) {
       sendEvent(machineId, event);
     }
+
+    log.info("Events {} sent to machine [{}]", events, machineId);
 
     return stateMachine;
   }
 
-  private StateMachine<ApplicationStates, ApplicationEvents> getStateMachine(
-    String machineId
-  ) {
+  private StateMachine<AppStates, AppEvents> getStateMachine(String machineId) {
     return stateMachines.get(machineId);
   }
 

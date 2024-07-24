@@ -1,6 +1,6 @@
 package dev.sashacorp.statemachine.machine.model.states;
 
-public enum ApplicationStates {
+public enum AppStates {
   READY(ApplicationStateTypes.INITIAL),
   DEPLOYING(ApplicationStateTypes.INTERMEDIATE),
   DEPLOYED(ApplicationStateTypes.INTERMEDIATE),
@@ -11,7 +11,7 @@ public enum ApplicationStates {
 
   private final ApplicationStateTypes stateType;
 
-  ApplicationStates(ApplicationStateTypes stateType) {
+  AppStates(ApplicationStateTypes stateType) {
     this.stateType = stateType;
   }
 

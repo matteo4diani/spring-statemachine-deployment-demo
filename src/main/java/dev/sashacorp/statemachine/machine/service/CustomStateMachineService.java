@@ -1,37 +1,38 @@
 package dev.sashacorp.statemachine.machine.service;
 
-import dev.sashacorp.statemachine.machine.model.events.ApplicationEvents;
-import dev.sashacorp.statemachine.machine.model.states.ApplicationStates;
+import dev.sashacorp.statemachine.machine.model.application.Application;
+import dev.sashacorp.statemachine.machine.model.events.AppEvents;
+import dev.sashacorp.statemachine.machine.model.states.AppStates;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.service.StateMachineService;
 
 public interface CustomStateMachineService
-  extends StateMachineService<ApplicationStates, ApplicationEvents> {
+  extends StateMachineService<AppStates, AppEvents> {
   @Override
-  StateMachine<ApplicationStates, ApplicationEvents> acquireStateMachine(
-    String machineId
-  );
+  StateMachine<AppStates, AppEvents> acquireStateMachine(String machineId);
 
-  Optional<StateMachine<ApplicationStates, ApplicationEvents>> acquireExistingStateMachine(
+  Optional<StateMachine<AppStates, AppEvents>> acquireExistingStateMachine(
     String machineId
   );
 
   @Override
   void releaseStateMachine(String machineId);
 
+  void setApplication(String machineId);
+
+  Application getApplication(String machineId);
+
   Set<String> getStateMachineIds();
 
-  Optional<ApplicationStates> getState(String machineId);
-
-  StateMachine<ApplicationStates, ApplicationEvents> sendEvent(
+  StateMachine<AppStates, AppEvents> sendEvent(
     String machineId,
-    ApplicationEvents event
+    AppEvents event
   );
 
-  StateMachine<ApplicationStates, ApplicationEvents> sendEvents(
+  StateMachine<AppStates, AppEvents> sendEvents(
     String machineId,
-    ApplicationEvents... events
+    AppEvents... events
   );
 }
