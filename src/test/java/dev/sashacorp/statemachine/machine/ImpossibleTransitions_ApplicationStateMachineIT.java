@@ -116,7 +116,7 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
 
   @Test
   void impossibleTransitions_from_DEPLOYED() throws Exception {
-    doReturn(true).when(deploymentGuards).isFullyDeployed(any());
+    doReturn(true).when(deploymentGuards).isFullyDeployedGuard(any());
 
     applicationStateMachineService.sendEvents(
       stateMachine.getId(),
@@ -150,9 +150,9 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
 
   @Test
   void impossibleTransitions_from_DELETING() throws Exception {
-    doReturn(true).when(deploymentGuards).isFullyDeployed(any());
-    doReturn(false).when(deploymentGuards).isNotFullyDeployed(any());
-    doReturn(false).when(deploymentGuards).isFullyDeleted(any());
+    doReturn(true).when(deploymentGuards).isFullyDeployedGuard(any());
+    doReturn(false).when(deploymentGuards).isNotFullyDeployedGuard(any());
+    doReturn(false).when(deploymentGuards).isFullyDeletedGuard(any());
     applicationStateMachineService.sendEvents(
       stateMachine.getId(),
       AppEvents.DEPLOY,
@@ -191,8 +191,8 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
 
   @Test
   void impossibleTransitions_from_DELETED() throws Exception {
-    doReturn(true).when(deploymentGuards).isFullyDeployed(any());
-    doReturn(true).when(deploymentGuards).isFullyDeleted(any());
+    doReturn(true).when(deploymentGuards).isFullyDeployedGuard(any());
+    doReturn(true).when(deploymentGuards).isFullyDeletedGuard(any());
 
     applicationStateMachineService.sendEvents(
       stateMachine.getId(),
@@ -234,8 +234,8 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
 
   @Test
   void impossibleTransitions_from_DEPLOYMENT_FAILED() throws Exception {
-    doReturn(true).when(deploymentGuards).isNotFullyDeployed(any());
-    doReturn(false).when(deploymentGuards).isFullyDeployed(any());
+    doReturn(true).when(deploymentGuards).isNotFullyDeployedGuard(any());
+    doReturn(false).when(deploymentGuards).isFullyDeployedGuard(any());
 
     applicationStateMachineService.sendEvents(
       stateMachine.getId(),

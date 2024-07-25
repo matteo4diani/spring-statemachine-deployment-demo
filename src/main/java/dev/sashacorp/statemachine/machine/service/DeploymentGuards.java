@@ -5,11 +5,12 @@ import dev.sashacorp.statemachine.machine.kubernetes.model.PodStatus;
 import dev.sashacorp.statemachine.machine.kubernetes.model.V1Pod;
 import dev.sashacorp.statemachine.machine.model.application.AppComponents;
 import dev.sashacorp.statemachine.machine.model.application.Application;
-import java.util.HashSet;
+import dev.sashacorp.statemachine.machine.model.events.AppEvents;
+import dev.sashacorp.statemachine.machine.model.states.AppStates;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.statemachine.ExtendedState;
+import org.springframework.statemachine.StateContext;
 
 public class DeploymentGuards {
 
@@ -19,11 +20,10 @@ public class DeploymentGuards {
     this.kubernetesClient = kubernetesClient;
   }
 
-  public boolean isFullyDeployed(ExtendedState extendedState) {
-    final Application app = extendedState.get(
-      Application.APPLICATION,
-      Application.class
-    );
+  public boolean isFullyDeployedGuard(
+    StateContext<AppStates, AppEvents> context
+  ) {
+    final Application app = getAppFromContext(context);
 
     final List<V1Pod> pods =
       this.kubernetesClient.getNamespacedComponents(app.id());
@@ -48,11 +48,10 @@ public class DeploymentGuards {
     return isEveryPodRunning && components.containsAll(app.components());
   }
 
-  public boolean isFullyDeleted(ExtendedState extendedState) {
-    final Application app = extendedState.get(
-      Application.APPLICATION,
-      Application.class
-    );
+  public boolean isFullyDeletedGuard(
+    StateContext<AppStates, AppEvents> context
+  ) {
+    final Application app = getAppFromContext(context);
 
     final List<V1Pod> pods =
       this.kubernetesClient.getNamespacedComponents(app.id());
@@ -60,7 +59,17 @@ public class DeploymentGuards {
     return pods.isEmpty();
   }
 
-  public boolean isNotFullyDeployed(ExtendedState extendedState) {
-    return !isFullyDeployed(extendedState);
+  public boolean isNotFullyDeployedGuard(
+    StateContext<AppStates, AppEvents> context
+  ) {
+    return !isFullyDeployedGuard(context);
+  }
+
+  private Application getAppFromContext(
+    StateContext<AppStates, AppEvents> context
+  ) {
+    return context
+      .getExtendedState()
+      .get(Application.APPLICATION, Application.class);
   }
 }

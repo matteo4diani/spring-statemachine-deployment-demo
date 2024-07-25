@@ -5,9 +5,12 @@ import dev.sashacorp.statemachine.machine.kubernetes.KubernetesClient;
 import dev.sashacorp.statemachine.machine.kubernetes.model.PodStatus;
 import dev.sashacorp.statemachine.machine.kubernetes.model.V1Pod;
 import dev.sashacorp.statemachine.machine.model.application.AppComponents;
+import dev.sashacorp.statemachine.machine.model.events.AppEvents;
+import dev.sashacorp.statemachine.machine.model.states.AppStates;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.statemachine.StateContext;
 
 @Slf4j
 public class DeploymentActions {
@@ -23,12 +26,12 @@ public class DeploymentActions {
     this.deploymentProperties = deploymentProperties;
   }
 
-  public void deployAction(String id) {
-    CompletableFuture.runAsync(() -> deploy(id));
+  public void deployAction(StateContext<AppStates, AppEvents> context) {
+    CompletableFuture.runAsync(() -> deploy(context.getStateMachine().getId()));
   }
 
-  public void deleteAction(String id) {
-    CompletableFuture.runAsync(() -> delete(id));
+  public void deleteAction(StateContext<AppStates, AppEvents> context) {
+    CompletableFuture.runAsync(() -> delete(context.getStateMachine().getId()));
   }
 
   private void deploy(String id) {

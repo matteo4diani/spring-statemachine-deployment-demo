@@ -61,16 +61,8 @@ public class StateMachineConfiguration
       .withStates()
       .initial(AppStates.READY)
       .end(AppStates.DELETED)
-      .state(
-        AppStates.DEPLOYING,
-        context ->
-          this.deploymentActions.deployAction(context.getStateMachine().getId())
-      )
-      .state(
-        AppStates.DELETING,
-        context ->
-          this.deploymentActions.deleteAction(context.getStateMachine().getId())
-      )
+      .state(AppStates.DEPLOYING, this.deploymentActions::deployAction)
+      .state(AppStates.DELETING, this.deploymentActions::deleteAction)
       .state(AppStates.DEPLOYMENT_FAILED)
       .state(AppStates.DEPLOYED);
   }
@@ -90,31 +82,19 @@ public class StateMachineConfiguration
       .source(AppStates.DEPLOYING)
       .target(AppStates.DEPLOYED)
       .event(AppEvents.NAMESPACE_STATUS_CHANGE)
-      .guard(context ->
-        this.deploymentGuards.isFullyDeployed(
-            context.getStateMachine().getExtendedState()
-          )
-      )
+      .guard(this.deploymentGuards::isFullyDeployedGuard)
       .and()
       .withExternal()
       .source(AppStates.DEPLOYING)
       .target(AppStates.DEPLOYMENT_FAILED)
       .timerOnce(this.deploymentProperties.getTimeout())
-      .guard(context ->
-        this.deploymentGuards.isNotFullyDeployed(
-            context.getStateMachine().getExtendedState()
-          )
-      )
+      .guard(this.deploymentGuards::isNotFullyDeployedGuard)
       .and()
       .withExternal()
       .source(AppStates.DEPLOYMENT_FAILED)
       .target(AppStates.DEPLOYED)
       .event(AppEvents.NAMESPACE_STATUS_CHANGE)
-      .guard(context ->
-        this.deploymentGuards.isFullyDeployed(
-            context.getStateMachine().getExtendedState()
-          )
-      )
+      .guard(this.deploymentGuards::isFullyDeployedGuard)
       .and()
       .withExternal()
       .source(AppStates.DEPLOYED)
@@ -125,10 +105,6 @@ public class StateMachineConfiguration
       .source(AppStates.DELETING)
       .target(AppStates.DELETED)
       .event(AppEvents.NAMESPACE_STATUS_CHANGE)
-      .guard(context ->
-        this.deploymentGuards.isFullyDeleted(
-            context.getStateMachine().getExtendedState()
-          )
-      );
+      .guard(this.deploymentGuards::isFullyDeletedGuard);
   }
 }
