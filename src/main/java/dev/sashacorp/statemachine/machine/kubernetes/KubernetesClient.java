@@ -35,7 +35,7 @@ public class KubernetesClient {
   }
 
   public void putNamespacedComponents(String namespace, List<V1Pod> pods) {
-    kubernetes.put(namespace, pods);
+    kubernetes.put(namespace, new ArrayList<>(pods));
 
     applicationEventPublisher.publishEvent(
       KubernetesEvent.buildEvent(namespace)
