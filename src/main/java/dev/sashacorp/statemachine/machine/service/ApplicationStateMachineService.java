@@ -104,16 +104,6 @@ public class ApplicationStateMachineService
   }
 
   @Override
-  public Application getApplication(String machineId) {
-    final var stateMachine = acquireExistingStateMachine(machineId)
-      .orElseThrow();
-
-    return stateMachine
-      .getExtendedState()
-      .get(Application.APPLICATION, Application.class);
-  }
-
-  @Override
   public Set<String> getStateMachineIds() {
     return this.stateMachines.keySet();
   }
