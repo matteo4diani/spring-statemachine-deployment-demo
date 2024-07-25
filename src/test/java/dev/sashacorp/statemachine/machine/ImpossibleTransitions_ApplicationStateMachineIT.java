@@ -151,7 +151,8 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
   @Test
   void impossibleTransitions_from_DELETING() throws Exception {
     doReturn(true).when(deploymentGuards).isFullyDeployed(any());
-
+    doReturn(false).when(deploymentGuards).isNotFullyDeployed(any());
+    doReturn(false).when(deploymentGuards).isFullyDeleted(any());
     applicationStateMachineService.sendEvents(
       stateMachine.getId(),
       AppEvents.DEPLOY,
@@ -178,6 +179,11 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
       .expectEventNotAccepted(1)
       .expectStates(AppStates.DELETING)
       .and()
+      .step()
+      .sendEvent(AppEvents.NAMESPACE_STATUS_CHANGE)
+      .expectStateChanged(0)
+      .expectStates(AppStates.DELETING)
+      .and()
       .build();
 
     plan.test();
@@ -186,6 +192,7 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
   @Test
   void impossibleTransitions_from_DELETED() throws Exception {
     doReturn(true).when(deploymentGuards).isFullyDeployed(any());
+    doReturn(true).when(deploymentGuards).isFullyDeleted(any());
 
     applicationStateMachineService.sendEvents(
       stateMachine.getId(),
@@ -219,6 +226,49 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
       .expectStateChanged(0)
       .expectEventNotAccepted(1)
       .expectStates(AppStates.DELETED)
+      .and()
+      .build();
+
+    plan.test();
+  }
+
+  @Test
+  void impossibleTransitions_from_DEPLOYMENT_FAILED() throws Exception {
+    doReturn(true).when(deploymentGuards).isNotFullyDeployed(any());
+    doReturn(false).when(deploymentGuards).isFullyDeployed(any());
+
+    applicationStateMachineService.sendEvents(
+      stateMachine.getId(),
+      AppEvents.DEPLOY
+    );
+
+    final StateMachineTestPlan<AppStates, AppEvents> plan = StateMachineTestPlanBuilder
+      .<AppStates, AppEvents>builder()
+      .defaultAwaitTime(5)
+      .stateMachine(stateMachine)
+      .step()
+      .expectStates(AppStates.DEPLOYING)
+      .and()
+      .step()
+      .expectStateChanged(1)
+      .expectStates(AppStates.DEPLOYMENT_FAILED)
+      .and()
+      .step()
+      .sendEvent(AppEvents.DEPLOY)
+      .expectStateChanged(0)
+      .expectEventNotAccepted(1)
+      .expectStates(AppStates.DEPLOYMENT_FAILED)
+      .and()
+      .step()
+      .sendEvent(AppEvents.NAMESPACE_STATUS_CHANGE)
+      .expectStateChanged(0)
+      .expectStates(AppStates.DEPLOYMENT_FAILED)
+      .and()
+      .step()
+      .sendEvent(AppEvents.DELETE)
+      .expectStateChanged(0)
+      .expectEventNotAccepted(1)
+      .expectStates(AppStates.DEPLOYMENT_FAILED)
       .and()
       .build();
 
