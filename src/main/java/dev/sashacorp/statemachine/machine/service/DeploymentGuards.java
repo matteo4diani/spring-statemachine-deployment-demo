@@ -24,13 +24,14 @@ public class DeploymentGuards {
       Application.APPLICATION,
       Application.class
     );
+
     final List<V1Pod> pods = kubernetesClient.getNamespacedComponents(app.id());
 
-    final boolean hasAnyPodsPending = pods
+    final boolean isAnyPodPending = pods
       .stream()
       .anyMatch(pod -> PodStatus.PENDING.equals(pod.status()));
 
-    if (hasAnyPodsPending) {
+    if (isAnyPodPending) {
       return false;
     }
 
@@ -39,14 +40,21 @@ public class DeploymentGuards {
       .map(V1Pod::type)
       .collect(Collectors.toSet());
 
-    final boolean hasAllPodsRunning = pods
+    final boolean isEveryPodRunning = pods
       .stream()
       .allMatch(pod -> PodStatus.RUNNING.equals(pod.status()));
 
-    return hasAllPodsRunning && components.containsAll(app.components());
+    return isEveryPodRunning && components.containsAll(app.components());
   }
 
   public boolean isFullyDeleted(ExtendedState extendedState) {
-    return true;
+    final Application app = extendedState.get(
+      Application.APPLICATION,
+      Application.class
+    );
+
+    final List<V1Pod> pods = kubernetesClient.getNamespacedComponents(app.id());
+
+    return pods.isEmpty();
   }
 }

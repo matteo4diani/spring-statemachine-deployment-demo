@@ -3,6 +3,7 @@ package dev.sashacorp.statemachine.machine.service;
 import dev.sashacorp.statemachine.machine.kubernetes.KubernetesClient;
 import dev.sashacorp.statemachine.machine.kubernetes.model.PodStatus;
 import dev.sashacorp.statemachine.machine.kubernetes.model.V1Pod;
+import dev.sashacorp.statemachine.machine.model.application.AppComponents;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,6 +56,29 @@ public class DeploymentActions {
 
   public void deleteAction(String id) {
     log.info("Running deletion action for app [{}]", id);
+
+    try {
+      Thread.sleep(DELAY);
+
+      kubernetesClient.removeNamespacedComponent(id, AppComponents.UI);
+
+      Thread.sleep(DELAY);
+
+      kubernetesClient.removeNamespacedComponent(
+        id,
+        AppComponents.QUERY_SERVICE
+      );
+
+      Thread.sleep(DELAY);
+
+      kubernetesClient.removeNamespacedComponent(
+        id,
+        AppComponents.RUNTIME_BUNDLE
+      );
+    } catch (InterruptedException cause) {
+      throw new RuntimeException(cause);
+    }
+
     log.info("Completed deletion action for app [{}]", id);
   }
 }

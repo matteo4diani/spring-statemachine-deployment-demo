@@ -1,6 +1,7 @@
 package dev.sashacorp.statemachine.machine.kubernetes;
 
 import dev.sashacorp.statemachine.machine.kubernetes.model.V1Pod;
+import dev.sashacorp.statemachine.machine.model.application.AppComponents;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +28,7 @@ public class KubernetesClient {
     }
 
     kubernetes.get(namespace).add(pod);
+
     applicationEventPublisher.publishEvent(
       KubernetesEvent.buildEvent(namespace)
     );
@@ -34,6 +36,22 @@ public class KubernetesClient {
 
   public void putNamespacedComponents(String namespace, List<V1Pod> pods) {
     kubernetes.put(namespace, pods);
+
+    applicationEventPublisher.publishEvent(
+      KubernetesEvent.buildEvent(namespace)
+    );
+  }
+
+  public void removeNamespacedComponent(
+    String namespace,
+    AppComponents component
+  ) {
+    if (!kubernetes.containsKey(namespace)) {
+      return;
+    }
+
+    kubernetes.get(namespace).removeIf(pod -> component.equals(pod.type()));
+
     applicationEventPublisher.publishEvent(
       KubernetesEvent.buildEvent(namespace)
     );

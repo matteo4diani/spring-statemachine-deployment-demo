@@ -61,7 +61,7 @@ class ApplicationStateMachineIT {
   void successfulDeployment_andDeletion() throws Exception {
     final StateMachineTestPlan<AppStates, AppEvents> plan = StateMachineTestPlanBuilder
       .<AppStates, AppEvents>builder()
-      .defaultAwaitTime(20)
+      .defaultAwaitTime(120)
       .stateMachine(this.stateMachine)
       .step()
       .expectStates(AppStates.READY)
@@ -81,7 +81,6 @@ class ApplicationStateMachineIT {
       .expectStates(AppStates.DELETING)
       .and()
       .step()
-      .sendEvent(AppEvents.NAMESPACE_STATUS_CHANGE)
       .expectStateChanged(1)
       .expectStates(AppStates.DELETED)
       .and()
