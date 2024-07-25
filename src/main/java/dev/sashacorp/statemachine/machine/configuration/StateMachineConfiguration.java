@@ -23,15 +23,18 @@ public class StateMachineConfiguration
   private final BootStateMachineMonitor<AppStates, AppEvents> stateMachineMonitor;
   private final DeploymentGuards deploymentGuards;
   private final DeploymentActions deploymentActions;
+  private final DeploymentProperties deploymentProperties;
 
   public StateMachineConfiguration(
     BootStateMachineMonitor<AppStates, AppEvents> stateMachineMonitor,
     DeploymentGuards deploymentGuards,
-    DeploymentActions deploymentActions
+    DeploymentActions deploymentActions,
+    DeploymentProperties deploymentProperties
   ) {
     this.stateMachineMonitor = stateMachineMonitor;
     this.deploymentGuards = deploymentGuards;
     this.deploymentActions = deploymentActions;
+    this.deploymentProperties = deploymentProperties;
   }
 
   @Bean
@@ -68,6 +71,7 @@ public class StateMachineConfiguration
         context ->
           this.deploymentActions.deleteAction(context.getStateMachine().getId())
       )
+      .state(AppStates.DEPLOYMENT_FAILED)
       .state(AppStates.DEPLOYED);
   }
 
@@ -90,7 +94,27 @@ public class StateMachineConfiguration
         this.deploymentGuards.isFullyDeployed(
             context.getStateMachine().getExtendedState()
           )
-      ) // check K8s API against descriptor
+      )
+      .and()
+      .withExternal()
+      .source(AppStates.DEPLOYING)
+      .target(AppStates.DEPLOYMENT_FAILED)
+      .timerOnce(this.deploymentProperties.getTimeout())
+      .guard(context ->
+        this.deploymentGuards.isNotFullyDeployed(
+            context.getStateMachine().getExtendedState()
+          )
+      )
+      .and()
+      .withExternal()
+      .source(AppStates.DEPLOYMENT_FAILED)
+      .target(AppStates.DEPLOYED)
+      .event(AppEvents.NAMESPACE_STATUS_CHANGE)
+      .guard(context ->
+        this.deploymentGuards.isFullyDeployed(
+            context.getStateMachine().getExtendedState()
+          )
+      )
       .and()
       .withExternal()
       .source(AppStates.DEPLOYED)
@@ -105,6 +129,6 @@ public class StateMachineConfiguration
         this.deploymentGuards.isFullyDeleted(
             context.getStateMachine().getExtendedState()
           )
-      ); // check K8s API against descriptor
+      );
   }
 }

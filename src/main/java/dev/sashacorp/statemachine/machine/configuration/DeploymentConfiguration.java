@@ -26,19 +26,16 @@ public class DeploymentConfiguration {
 
   @Bean
   public DeploymentActions deploymentActions(
-    KubernetesClient kubernetesClient
+    KubernetesClient kubernetesClient,
+    DeploymentProperties deploymentProperties
   ) {
-    return new DeploymentActions(kubernetesClient);
+    return new DeploymentActions(kubernetesClient, deploymentProperties);
   }
 
   @Bean
   public DeploymentService deploymentService(
-    ApplicationStateMachineService applicationStateMachineService,
-    KubernetesClient kubernetesClient
+    ApplicationStateMachineService applicationStateMachineService
   ) {
-    return new DeploymentService(
-      applicationStateMachineService,
-      kubernetesClient
-    );
+    return new DeploymentService(applicationStateMachineService);
   }
 }

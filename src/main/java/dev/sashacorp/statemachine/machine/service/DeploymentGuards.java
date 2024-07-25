@@ -25,7 +25,8 @@ public class DeploymentGuards {
       Application.class
     );
 
-    final List<V1Pod> pods = kubernetesClient.getNamespacedComponents(app.id());
+    final List<V1Pod> pods =
+      this.kubernetesClient.getNamespacedComponents(app.id());
 
     final boolean isAnyPodPending = pods
       .stream()
@@ -53,8 +54,13 @@ public class DeploymentGuards {
       Application.class
     );
 
-    final List<V1Pod> pods = kubernetesClient.getNamespacedComponents(app.id());
+    final List<V1Pod> pods =
+      this.kubernetesClient.getNamespacedComponents(app.id());
 
     return pods.isEmpty();
+  }
+
+  public boolean isNotFullyDeployed(ExtendedState extendedState) {
+    return !isFullyDeployed(extendedState);
   }
 }

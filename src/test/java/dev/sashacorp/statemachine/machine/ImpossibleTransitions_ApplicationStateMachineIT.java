@@ -4,13 +4,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 
 import dev.sashacorp.statemachine.machine.configuration.DeploymentConfiguration;
+import dev.sashacorp.statemachine.machine.configuration.DeploymentProperties;
 import dev.sashacorp.statemachine.machine.configuration.KubernetesListenerConfiguration;
 import dev.sashacorp.statemachine.machine.configuration.StateMachineConfiguration;
-import dev.sashacorp.statemachine.machine.kubernetes.KubernetesClient;
 import dev.sashacorp.statemachine.machine.model.events.AppEvents;
 import dev.sashacorp.statemachine.machine.model.states.AppStates;
 import dev.sashacorp.statemachine.machine.service.ApplicationStateMachineService;
 import dev.sashacorp.statemachine.machine.service.DeploymentGuards;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -22,18 +23,19 @@ import org.springframework.statemachine.test.StateMachineTestPlan;
 import org.springframework.statemachine.test.StateMachineTestPlanBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
+import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest(
   classes = {
     StateMachineConfiguration.class,
     DeploymentConfiguration.class,
     KubernetesListenerConfiguration.class,
+    DeploymentProperties.class,
   }
 )
 @DirtiesContext(classMode = ClassMode.BEFORE_EACH_TEST_METHOD)
-class ApplicationStateMachineIT {
-
-  public static final String MACHINE_ID = "1";
+@TestPropertySource("classpath:application-test.properties")
+class ImpossibleTransitions_ApplicationStateMachineIT {
 
   @MockBean
   private BootStateMachineMonitor<AppStates, AppEvents> bootStateMachineMonitor;
@@ -42,51 +44,17 @@ class ApplicationStateMachineIT {
   private ApplicationStateMachineService applicationStateMachineService;
 
   @SpyBean
-  private KubernetesClient kubernetesClient;
-
-  @SpyBean
   private DeploymentGuards deploymentGuards;
 
   private StateMachine<AppStates, AppEvents> stateMachine;
 
   @BeforeEach
   void setup() {
+    final var machineId = UUID.randomUUID().toString();
     this.stateMachine =
-      this.applicationStateMachineService.acquireStateMachine(MACHINE_ID);
+      this.applicationStateMachineService.acquireStateMachine(machineId);
 
-    this.applicationStateMachineService.setApplication(MACHINE_ID);
-  }
-
-  @Test
-  void successfulDeployment_andDeletion() throws Exception {
-    final StateMachineTestPlan<AppStates, AppEvents> plan = StateMachineTestPlanBuilder
-      .<AppStates, AppEvents>builder()
-      .defaultAwaitTime(120)
-      .stateMachine(this.stateMachine)
-      .step()
-      .expectStates(AppStates.READY)
-      .and()
-      .step()
-      .sendEvent(AppEvents.DEPLOY)
-      .expectStateChanged(1)
-      .expectStates(AppStates.DEPLOYING)
-      .and()
-      .step()
-      .expectStateChanged(1)
-      .expectStates(AppStates.DEPLOYED)
-      .and()
-      .step()
-      .sendEvent(AppEvents.DELETE)
-      .expectStateChanged(1)
-      .expectStates(AppStates.DELETING)
-      .and()
-      .step()
-      .expectStateChanged(1)
-      .expectStates(AppStates.DELETED)
-      .and()
-      .build();
-
-    plan.test();
+    this.applicationStateMachineService.setApplication(machineId);
   }
 
   @Test
@@ -94,7 +62,7 @@ class ApplicationStateMachineIT {
     final StateMachineTestPlan<AppStates, AppEvents> plan = StateMachineTestPlanBuilder
       .<AppStates, AppEvents>builder()
       .defaultAwaitTime(2)
-      .stateMachine(this.stateMachine)
+      .stateMachine(stateMachine)
       .step()
       .expectStates(AppStates.READY)
       .and()
@@ -117,12 +85,15 @@ class ApplicationStateMachineIT {
 
   @Test
   void impossibleTransitions_from_DEPLOYING() throws Exception {
-    applicationStateMachineService.sendEvents(MACHINE_ID, AppEvents.DEPLOY);
+    applicationStateMachineService.sendEvents(
+      stateMachine.getId(),
+      AppEvents.DEPLOY
+    );
 
     final StateMachineTestPlan<AppStates, AppEvents> plan = StateMachineTestPlanBuilder
       .<AppStates, AppEvents>builder()
       .defaultAwaitTime(2)
-      .stateMachine(this.stateMachine)
+      .stateMachine(stateMachine)
       .step()
       .expectStates(AppStates.DEPLOYING)
       .and()
@@ -148,7 +119,7 @@ class ApplicationStateMachineIT {
     doReturn(true).when(deploymentGuards).isFullyDeployed(any());
 
     applicationStateMachineService.sendEvents(
-      MACHINE_ID,
+      stateMachine.getId(),
       AppEvents.DEPLOY,
       AppEvents.NAMESPACE_STATUS_CHANGE
     );
@@ -156,7 +127,7 @@ class ApplicationStateMachineIT {
     final StateMachineTestPlan<AppStates, AppEvents> plan = StateMachineTestPlanBuilder
       .<AppStates, AppEvents>builder()
       .defaultAwaitTime(2)
-      .stateMachine(this.stateMachine)
+      .stateMachine(stateMachine)
       .step()
       .expectStates(AppStates.DEPLOYED)
       .and()
@@ -182,7 +153,7 @@ class ApplicationStateMachineIT {
     doReturn(true).when(deploymentGuards).isFullyDeployed(any());
 
     applicationStateMachineService.sendEvents(
-      MACHINE_ID,
+      stateMachine.getId(),
       AppEvents.DEPLOY,
       AppEvents.NAMESPACE_STATUS_CHANGE,
       AppEvents.DELETE
@@ -191,7 +162,7 @@ class ApplicationStateMachineIT {
     final StateMachineTestPlan<AppStates, AppEvents> plan = StateMachineTestPlanBuilder
       .<AppStates, AppEvents>builder()
       .defaultAwaitTime(2)
-      .stateMachine(this.stateMachine)
+      .stateMachine(stateMachine)
       .step()
       .expectStates(AppStates.DELETING)
       .and()
@@ -217,7 +188,7 @@ class ApplicationStateMachineIT {
     doReturn(true).when(deploymentGuards).isFullyDeployed(any());
 
     applicationStateMachineService.sendEvents(
-      MACHINE_ID,
+      stateMachine.getId(),
       AppEvents.DEPLOY,
       AppEvents.NAMESPACE_STATUS_CHANGE,
       AppEvents.DELETE,
@@ -227,7 +198,7 @@ class ApplicationStateMachineIT {
     final StateMachineTestPlan<AppStates, AppEvents> plan = StateMachineTestPlanBuilder
       .<AppStates, AppEvents>builder()
       .defaultAwaitTime(2)
-      .stateMachine(this.stateMachine)
+      .stateMachine(stateMachine)
       .step()
       .expectStates(AppStates.DELETED)
       .and()

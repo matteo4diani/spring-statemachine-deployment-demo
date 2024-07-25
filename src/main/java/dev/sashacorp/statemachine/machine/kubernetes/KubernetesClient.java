@@ -19,41 +19,42 @@ public class KubernetesClient {
   }
 
   public List<V1Pod> getNamespacedComponents(String namespace) {
-    return kubernetes.getOrDefault(namespace, Collections.emptyList());
+    return this.kubernetes.getOrDefault(namespace, Collections.emptyList());
   }
 
   public void putNamespacedComponent(String namespace, V1Pod pod) {
-    if (!kubernetes.containsKey(namespace)) {
-      kubernetes.put(namespace, new ArrayList<>());
+    if (!this.kubernetes.containsKey(namespace)) {
+      this.kubernetes.put(namespace, new ArrayList<>());
     }
 
-    kubernetes.get(namespace).add(pod);
+    this.kubernetes.get(namespace).add(pod);
 
-    applicationEventPublisher.publishEvent(
-      KubernetesEvent.buildEvent(namespace)
-    );
+    this.applicationEventPublisher.publishEvent(
+        KubernetesEvent.buildEvent(namespace)
+      );
   }
 
   public void putNamespacedComponents(String namespace, List<V1Pod> pods) {
-    kubernetes.put(namespace, new ArrayList<>(pods));
+    this.kubernetes.put(namespace, new ArrayList<>(pods));
 
-    applicationEventPublisher.publishEvent(
-      KubernetesEvent.buildEvent(namespace)
-    );
+    this.applicationEventPublisher.publishEvent(
+        KubernetesEvent.buildEvent(namespace)
+      );
   }
 
   public void removeNamespacedComponent(
     String namespace,
     AppComponents component
   ) {
-    if (!kubernetes.containsKey(namespace)) {
+    if (!this.kubernetes.containsKey(namespace)) {
       return;
     }
 
-    kubernetes.get(namespace).removeIf(pod -> component.equals(pod.type()));
+    this.kubernetes.get(namespace)
+      .removeIf(pod -> component.equals(pod.type()));
 
-    applicationEventPublisher.publishEvent(
-      KubernetesEvent.buildEvent(namespace)
-    );
+    this.applicationEventPublisher.publishEvent(
+        KubernetesEvent.buildEvent(namespace)
+      );
   }
 }

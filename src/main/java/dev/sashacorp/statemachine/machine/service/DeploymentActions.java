@@ -1,24 +1,37 @@
 package dev.sashacorp.statemachine.machine.service;
 
+import dev.sashacorp.statemachine.machine.configuration.DeploymentProperties;
 import dev.sashacorp.statemachine.machine.kubernetes.KubernetesClient;
 import dev.sashacorp.statemachine.machine.kubernetes.model.PodStatus;
 import dev.sashacorp.statemachine.machine.kubernetes.model.V1Pod;
 import dev.sashacorp.statemachine.machine.model.application.AppComponents;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DeploymentActions {
 
-  public static final int DELAY = 100;
   private final KubernetesClient kubernetesClient;
+  private final DeploymentProperties deploymentProperties;
 
-  public DeploymentActions(KubernetesClient kubernetesClient) {
+  public DeploymentActions(
+    KubernetesClient kubernetesClient,
+    DeploymentProperties deploymentProperties
+  ) {
     this.kubernetesClient = kubernetesClient;
+    this.deploymentProperties = deploymentProperties;
   }
 
   public void deployAction(String id) {
+    CompletableFuture.runAsync(() -> deploy(id));
+  }
+
+  public void deleteAction(String id) {
+    CompletableFuture.runAsync(() -> delete(id));
+  }
+
+  private void deploy(String id) {
     log.info("Running deployment action for app [{}]", id);
 
     try {
@@ -26,28 +39,22 @@ public class DeploymentActions {
       var queryService = V1Pod.newQueryService(id);
       var ui = V1Pod.newUi(id);
 
-      Thread.sleep(DELAY);
+      addComponentAndSleepForDelay(id, runtimeBundle);
 
-      kubernetesClient.putNamespacedComponent(id, runtimeBundle);
+      addComponentAndSleepForDelay(id, queryService);
 
-      Thread.sleep(DELAY);
+      addComponentAndSleepForDelay(id, ui);
 
-      kubernetesClient.putNamespacedComponent(id, queryService);
-
-      Thread.sleep(DELAY);
-
-      kubernetesClient.putNamespacedComponent(id, ui);
-
-      Thread.sleep(DELAY);
+      sleepForDelay();
 
       runtimeBundle = runtimeBundle.updateStatus(PodStatus.RUNNING);
       queryService = queryService.updateStatus(PodStatus.RUNNING);
       ui = ui.updateStatus(PodStatus.RUNNING);
 
-      kubernetesClient.putNamespacedComponents(
-        id,
-        List.of(runtimeBundle, queryService, ui)
-      );
+      this.kubernetesClient.putNamespacedComponents(
+          id,
+          List.of(runtimeBundle, queryService, ui)
+        );
     } catch (InterruptedException cause) {
       throw new RuntimeException(cause);
     }
@@ -55,31 +62,47 @@ public class DeploymentActions {
     log.info("Completed deployment action for app [{}]", id);
   }
 
-  public void deleteAction(String id) {
+  private void delete(String id) {
     log.info("Running deletion action for app [{}]", id);
 
     try {
-      Thread.sleep(DELAY);
+      removeComponentAndSleepForDelay(id, AppComponents.UI);
 
-      kubernetesClient.removeNamespacedComponent(id, AppComponents.UI);
+      removeComponentAndSleepForDelay(id, AppComponents.QUERY_SERVICE);
 
-      Thread.sleep(DELAY);
-
-      kubernetesClient.removeNamespacedComponent(
-        id,
-        AppComponents.QUERY_SERVICE
-      );
-
-      Thread.sleep(DELAY);
-
-      kubernetesClient.removeNamespacedComponent(
-        id,
-        AppComponents.RUNTIME_BUNDLE
-      );
+      removeComponentAndSleepForDelay(id, AppComponents.RUNTIME_BUNDLE);
     } catch (InterruptedException cause) {
       throw new RuntimeException(cause);
     }
 
     log.info("Completed deletion action for app [{}]", id);
+  }
+
+  private void addComponent(String id, V1Pod runtimeBundle) {
+    this.kubernetesClient.putNamespacedComponent(id, runtimeBundle);
+  }
+
+  private void addComponentAndSleepForDelay(String id, V1Pod runtimeBundle)
+    throws InterruptedException {
+    sleepForDelay();
+
+    addComponent(id, runtimeBundle);
+  }
+
+  private void removeComponent(String id, AppComponents component) {
+    this.kubernetesClient.removeNamespacedComponent(id, component);
+  }
+
+  private void removeComponentAndSleepForDelay(
+    String id,
+    AppComponents component
+  ) throws InterruptedException {
+    sleepForDelay();
+
+    removeComponent(id, component);
+  }
+
+  private void sleepForDelay() throws InterruptedException {
+    Thread.sleep(this.deploymentProperties.getDelay());
   }
 }

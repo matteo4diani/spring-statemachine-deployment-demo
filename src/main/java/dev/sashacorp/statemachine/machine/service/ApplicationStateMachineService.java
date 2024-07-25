@@ -76,12 +76,12 @@ public class ApplicationStateMachineService
     final var stateMachine = getStateMachine(machineId);
 
     if (Objects.isNull(stateMachine)) {
-      stateMachines.remove(machineId);
+      this.stateMachines.remove(machineId);
       return;
     }
 
     if (AppStates.DELETED.equals(stateMachine.getState().getId())) {
-      stateMachines.remove(machineId);
+      this.stateMachines.remove(machineId);
       stateMachine.stopReactively().block();
     }
   }
@@ -115,7 +115,7 @@ public class ApplicationStateMachineService
 
   @Override
   public Set<String> getStateMachineIds() {
-    return stateMachines.keySet();
+    return this.stateMachines.keySet();
   }
 
   @Override
@@ -153,18 +153,18 @@ public class ApplicationStateMachineService
   }
 
   private StateMachine<AppStates, AppEvents> getStateMachine(String machineId) {
-    return stateMachines.get(machineId);
+    return this.stateMachines.get(machineId);
   }
 
   private void putStateMachine(String machineId) {
-    stateMachines.put(
-      machineId,
-      stateMachineFactory.getStateMachine(machineId)
-    );
+    this.stateMachines.put(
+        machineId,
+        this.stateMachineFactory.getStateMachine(machineId)
+      );
   }
 
   private boolean doesNotContainStateMachine(String machineId) {
-    return !stateMachines.containsKey(machineId);
+    return !this.stateMachines.containsKey(machineId);
   }
 
   private boolean containsNullStateMachine(String machineId) {

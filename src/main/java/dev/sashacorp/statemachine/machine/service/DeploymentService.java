@@ -8,27 +8,22 @@ import org.springframework.statemachine.StateMachine;
 public class DeploymentService {
 
   private final ApplicationStateMachineService stateMachineService;
-  private final KubernetesClient kubernetesClient;
 
-  public DeploymentService(
-    ApplicationStateMachineService stateMachineService,
-    KubernetesClient kubernetesClient
-  ) {
+  public DeploymentService(ApplicationStateMachineService stateMachineService) {
     this.stateMachineService = stateMachineService;
-    this.kubernetesClient = kubernetesClient;
   }
 
   public StateMachine<AppStates, AppEvents> deployApplication(String id) {
-    final var stateMachine = stateMachineService.acquireStateMachine(id);
+    final var stateMachine = this.stateMachineService.acquireStateMachine(id);
 
-    stateMachineService.setApplication(id);
+    this.stateMachineService.setApplication(id);
 
-    stateMachineService.sendEvent(stateMachine.getId(), AppEvents.DEPLOY);
+    this.stateMachineService.sendEvent(stateMachine.getId(), AppEvents.DEPLOY);
 
     return stateMachine;
   }
 
   public StateMachine<AppStates, AppEvents> undeployApplication(String id) {
-    return stateMachineService.sendEvent(id, AppEvents.DELETE);
+    return this.stateMachineService.sendEvent(id, AppEvents.DELETE);
   }
 }

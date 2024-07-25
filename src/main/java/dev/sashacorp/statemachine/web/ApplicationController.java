@@ -38,7 +38,7 @@ public class ApplicationController {
   @GetMapping
   public ResponseEntity<Set<String>> findAllApplications() {
     return ResponseEntity.of(
-      Optional.ofNullable(stateMachineService.getStateMachineIds())
+      Optional.ofNullable(this.stateMachineService.getStateMachineIds())
     );
   }
 
@@ -46,7 +46,7 @@ public class ApplicationController {
   public ResponseEntity<String> getApplication(@PathVariable("id") String id) {
     return getStringResponseEntity(
       "State machine with id [{0}] has status [{1}]",
-      stateMachineService.acquireExistingStateMachine(id).orElseThrow()
+      this.stateMachineService.acquireExistingStateMachine(id).orElseThrow()
     );
   }
 
@@ -56,7 +56,7 @@ public class ApplicationController {
   ) {
     return getStringResponseEntity(
       "Created state machine with id [{0}] and status [{1}]",
-      deploymentService.deployApplication(id)
+      this.deploymentService.deployApplication(id)
     );
   }
 
@@ -66,7 +66,7 @@ public class ApplicationController {
   ) {
     return getStringResponseEntity(
       "Deleting state machine with id [{0}] and status [{1}]",
-      deploymentService.undeployApplication(id)
+      this.deploymentService.undeployApplication(id)
     );
   }
 
@@ -77,7 +77,7 @@ public class ApplicationController {
   ) {
     return getStringResponseEntity(
       "State machine with id [{0}] is now in status [{1}]",
-      stateMachineService.sendEvent(id, event)
+      this.stateMachineService.sendEvent(id, event)
     );
   }
 
@@ -85,7 +85,7 @@ public class ApplicationController {
   public ResponseEntity<String> cleanApplication(
     @PathVariable("id") String id
   ) {
-    stateMachineService.releaseStateMachine(id);
+    this.stateMachineService.releaseStateMachine(id);
 
     return ResponseEntity.of(
       Optional.of(format("Released state machine with id [{0}]", id))
