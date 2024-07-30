@@ -13,12 +13,12 @@ public interface CustomStateMachineService
   @Override
   StateMachine<AppStates, AppEvents> acquireStateMachine(String machineId);
 
+  @Override
+  void releaseStateMachine(String machineId);
+
   Optional<StateMachine<AppStates, AppEvents>> acquireExistingStateMachine(
     String machineId
   );
-
-  @Override
-  void releaseStateMachine(String machineId);
 
   void setApplication(String machineId);
 

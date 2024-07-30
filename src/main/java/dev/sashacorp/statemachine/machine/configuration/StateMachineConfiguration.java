@@ -81,7 +81,7 @@ public class StateMachineConfiguration
       .withExternal()
       .source(AppStates.DEPLOYING)
       .target(AppStates.DEPLOYED)
-      .event(AppEvents.NAMESPACE_STATUS_CHANGE)
+      .event(AppEvents.KUBERNETES_STATUS_CHANGE)
       .guard(this.deploymentGuards::isFullyDeployedGuard)
       .and()
       .withExternal()
@@ -93,7 +93,7 @@ public class StateMachineConfiguration
       .withExternal()
       .source(AppStates.DEPLOYMENT_FAILED)
       .target(AppStates.DEPLOYED)
-      .event(AppEvents.NAMESPACE_STATUS_CHANGE)
+      .event(AppEvents.KUBERNETES_STATUS_CHANGE)
       .guard(this.deploymentGuards::isFullyDeployedGuard)
       .and()
       .withExternal()
@@ -104,7 +104,7 @@ public class StateMachineConfiguration
       .withExternal()
       .source(AppStates.DELETING)
       .target(AppStates.DELETED)
-      .event(AppEvents.NAMESPACE_STATUS_CHANGE)
+      .event(AppEvents.KUBERNETES_STATUS_CHANGE)
       .guard(this.deploymentGuards::isFullyDeletedGuard);
   }
 }

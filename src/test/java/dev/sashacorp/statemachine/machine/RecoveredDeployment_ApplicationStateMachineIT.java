@@ -1,8 +1,5 @@
 package dev.sashacorp.statemachine.machine;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-
 import dev.sashacorp.statemachine.machine.configuration.DeploymentConfiguration;
 import dev.sashacorp.statemachine.machine.configuration.DeploymentProperties;
 import dev.sashacorp.statemachine.machine.configuration.KubernetesListenerConfiguration;
@@ -61,7 +58,7 @@ class RecoveredDeployment_ApplicationStateMachineIT {
   void unsuccessfulDeployment_recovery_andDeletion() throws Exception {
     final StateMachineTestPlan<AppStates, AppEvents> plan = StateMachineTestPlanBuilder
       .<AppStates, AppEvents>builder()
-      .defaultAwaitTime(120)
+      .defaultAwaitTime(10)
       .stateMachine(stateMachine)
       .step()
       .expectStates(AppStates.READY)

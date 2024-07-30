@@ -18,7 +18,7 @@ public class KubernetesListener {
   public void handleKubernetesEvent(KubernetesEvent kubernetesEvent) {
     this.applicationStateMachineService.sendEvent(
         kubernetesEvent.namespace(),
-        AppEvents.NAMESPACE_STATUS_CHANGE
+        AppEvents.KUBERNETES_STATUS_CHANGE
       );
   }
 }

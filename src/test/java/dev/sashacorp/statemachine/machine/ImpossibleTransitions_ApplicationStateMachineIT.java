@@ -67,7 +67,7 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
       .expectStates(AppStates.READY)
       .and()
       .step()
-      .sendEvent(AppEvents.NAMESPACE_STATUS_CHANGE)
+      .sendEvent(AppEvents.KUBERNETES_STATUS_CHANGE)
       .expectStateChanged(0)
       .expectEventNotAccepted(1)
       .expectStates(AppStates.READY)
@@ -121,7 +121,7 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
     applicationStateMachineService.sendEvents(
       stateMachine.getId(),
       AppEvents.DEPLOY,
-      AppEvents.NAMESPACE_STATUS_CHANGE
+      AppEvents.KUBERNETES_STATUS_CHANGE
     );
 
     final StateMachineTestPlan<AppStates, AppEvents> plan = StateMachineTestPlanBuilder
@@ -138,7 +138,7 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
       .expectStates(AppStates.DEPLOYED)
       .and()
       .step()
-      .sendEvent(AppEvents.NAMESPACE_STATUS_CHANGE)
+      .sendEvent(AppEvents.KUBERNETES_STATUS_CHANGE)
       .expectStateChanged(0)
       .expectEventNotAccepted(1)
       .expectStates(AppStates.DEPLOYED)
@@ -153,10 +153,11 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
     doReturn(true).when(deploymentGuards).isFullyDeployedGuard(any());
     doReturn(false).when(deploymentGuards).isNotFullyDeployedGuard(any());
     doReturn(false).when(deploymentGuards).isFullyDeletedGuard(any());
+
     applicationStateMachineService.sendEvents(
       stateMachine.getId(),
       AppEvents.DEPLOY,
-      AppEvents.NAMESPACE_STATUS_CHANGE,
+      AppEvents.KUBERNETES_STATUS_CHANGE,
       AppEvents.DELETE
     );
 
@@ -180,7 +181,7 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
       .expectStates(AppStates.DELETING)
       .and()
       .step()
-      .sendEvent(AppEvents.NAMESPACE_STATUS_CHANGE)
+      .sendEvent(AppEvents.KUBERNETES_STATUS_CHANGE)
       .expectStateChanged(0)
       .expectStates(AppStates.DELETING)
       .and()
@@ -197,9 +198,9 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
     applicationStateMachineService.sendEvents(
       stateMachine.getId(),
       AppEvents.DEPLOY,
-      AppEvents.NAMESPACE_STATUS_CHANGE,
+      AppEvents.KUBERNETES_STATUS_CHANGE,
       AppEvents.DELETE,
-      AppEvents.NAMESPACE_STATUS_CHANGE
+      AppEvents.KUBERNETES_STATUS_CHANGE
     );
 
     final StateMachineTestPlan<AppStates, AppEvents> plan = StateMachineTestPlanBuilder
@@ -222,7 +223,7 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
       .expectStates(AppStates.DELETED)
       .and()
       .step()
-      .sendEvent(AppEvents.NAMESPACE_STATUS_CHANGE)
+      .sendEvent(AppEvents.KUBERNETES_STATUS_CHANGE)
       .expectStateChanged(0)
       .expectEventNotAccepted(1)
       .expectStates(AppStates.DELETED)
@@ -260,7 +261,7 @@ class ImpossibleTransitions_ApplicationStateMachineIT {
       .expectStates(AppStates.DEPLOYMENT_FAILED)
       .and()
       .step()
-      .sendEvent(AppEvents.NAMESPACE_STATUS_CHANGE)
+      .sendEvent(AppEvents.KUBERNETES_STATUS_CHANGE)
       .expectStateChanged(0)
       .expectStates(AppStates.DEPLOYMENT_FAILED)
       .and()

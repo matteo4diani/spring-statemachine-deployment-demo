@@ -7,7 +7,6 @@ import dev.sashacorp.statemachine.machine.configuration.StateMachineConfiguratio
 import dev.sashacorp.statemachine.machine.model.events.AppEvents;
 import dev.sashacorp.statemachine.machine.model.states.AppStates;
 import dev.sashacorp.statemachine.machine.service.ApplicationStateMachineService;
-import dev.sashacorp.statemachine.machine.service.DeploymentGuards;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +54,7 @@ class SuccessfulDeployment_ApplicationStateMachineIT {
   void successfulDeployment_andDeletion() throws Exception {
     final StateMachineTestPlan<AppStates, AppEvents> plan = StateMachineTestPlanBuilder
       .<AppStates, AppEvents>builder()
-      .defaultAwaitTime(180)
+      .defaultAwaitTime(10)
       .stateMachine(stateMachine)
       .step()
       .expectStates(AppStates.READY)
