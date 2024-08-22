@@ -1,11 +1,11 @@
 package dev.sashacorp.statemachine.machine.service;
 
-import static dev.sashacorp.statemachine.machine.model.states.AppStates.DELETED;
-import static dev.sashacorp.statemachine.machine.model.states.AppStates.DELETING;
-
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
+import dev.sashacorp.statemachine.machine.kubernetes.KubernetesClient;
+import dev.sashacorp.statemachine.machine.kubernetes.model.PodStatus;
+import dev.sashacorp.statemachine.machine.kubernetes.model.V1Pod;
 import dev.sashacorp.statemachine.machine.model.application.Application;
 import dev.sashacorp.statemachine.machine.model.events.AppEvents;
 import dev.sashacorp.statemachine.machine.model.states.AppStates;
@@ -32,6 +32,9 @@ public class ApplicationStateMachineService
   private JpaStateMachineRepository jpaStateMachineRepository;
 
   private final StateMachineFactory<AppStates, AppEvents> stateMachineFactory;
+
+  @Autowired
+  private KubernetesClient kubernetesClient;
 
   public ApplicationStateMachineService(
     StateMachineFactory<AppStates, AppEvents> stateMachineFactory
@@ -74,11 +77,57 @@ public class ApplicationStateMachineService
       }
 
       stateMachine.startReactively().block();
+
     } catch (Exception e) {
       log.error("🔥 Error during state machine acquisition with id " + machineId);
     }
 
     return stateMachine;
+  }
+
+  @Override
+  public StateMachine<AppStates, AppEvents> restoreApplication(String machineId, AppStates state) {
+    log.info("💀 Restoring pre-existing app as state machine with id {} and state {}", machineId, state);
+
+    final var stateMachine = stateMachineFactory.getStateMachine(
+            machineId
+    );
+
+    this.setApplication(stateMachine);
+
+    final var extendedState = new DefaultExtendedState();
+
+    extendedState.getVariables().put(Application.APPLICATION, new Application(machineId));
+
+    final var context = new DefaultStateMachineContext<AppStates, AppEvents>(
+            state,
+            null,
+            null,
+            extendedState,
+            null,
+            machineId
+    );
+
+
+    try {
+
+      this.stateMachinePersist.write(context, machineId);
+
+      stateMachine.stopReactively().block();
+
+      stateMachine.getStateMachineAccessor().doWithAllRegions(
+              stateMachineAccess -> stateMachineAccess.resetStateMachineReactively(context).block()
+      );
+
+      log.info("🚀 Pre-existing app restored as state machine with id {} and state {}", machineId, stateMachine.getState().getId());
+
+    } catch (Exception e) {
+      log.error("🔥 Error during pre-existing app state machine restoration with id {} and state {}", machineId, state);
+    }
+
+    simulatePreExistingKubernetesDeployment(machineId);
+
+    return acquireStateMachine(machineId);
   }
 
   @Override
@@ -93,10 +142,9 @@ public class ApplicationStateMachineService
   public void releaseStateMachine(String machineId) {
     final var stateMachine = this.acquireStateMachine(machineId);
 
-    if (Set.of(DELETING, DELETED).contains(stateMachine.getState().getId())) {
-      stateMachine.stopReactively().block();
-      this.jpaStateMachineRepository.deleteById(machineId);
-    }
+    stateMachine.stopReactively().block();
+    this.jpaStateMachineRepository.deleteById(machineId);
+
   }
 
   @Override
@@ -157,35 +205,18 @@ public class ApplicationStateMachineService
     return stateMachine;
   }
 
-  @Override
-  public StateMachine<AppStates, AppEvents> restoreApplication(String machineId, AppStates state) {
-    log.info("💀 Restoring pre-existing app as state machine with id {} and state {}", machineId, state);
+  private void simulatePreExistingKubernetesDeployment(String machineId) {
+    var runtimeBundle = V1Pod.newRuntimeBundle(machineId);
+    var queryService = V1Pod.newQueryService(machineId);
+    var ui = V1Pod.newUi(machineId);
 
-    final var stateMachine = stateMachineFactory.getStateMachine(
-            machineId
+    runtimeBundle = runtimeBundle.updateStatus(PodStatus.RUNNING);
+    queryService = queryService.updateStatus(PodStatus.RUNNING);
+    ui = ui.updateStatus(PodStatus.RUNNING);
+
+    this.kubernetesClient.putNamespacedComponents(
+            machineId,
+            List.of(runtimeBundle, queryService, ui)
     );
-
-    stateMachine.stopReactively().block();
-
-    try {
-      this.setApplication(stateMachine);
-
-      stateMachine.startReactively().block();
-
-      stateMachine
-              .getStateMachineAccessor()
-              .doWithAllRegions(function ->
-                                        function.resetStateMachineReactively(
-                                                new DefaultStateMachineContext<>(state, null, null, new DefaultExtendedState())
-                                        ).block()
-              );
-
-      log.info("🚀 Pre-existing app restored as state machine with id {} and state {}", machineId, state);
-
-    } catch (Exception e) {
-      log.error("🔥 Error during pre-existing app state machine restoration with id {} and state {}", machineId, state);
-    }
-
-    return stateMachine;
   }
 }
