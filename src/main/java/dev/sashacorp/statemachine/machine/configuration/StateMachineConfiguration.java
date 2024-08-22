@@ -5,6 +5,7 @@ import dev.sashacorp.statemachine.machine.model.states.AppStates;
 import dev.sashacorp.statemachine.machine.service.ApplicationStateMachineService;
 import dev.sashacorp.statemachine.machine.service.DeploymentActions;
 import dev.sashacorp.statemachine.machine.service.DeploymentGuards;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.statemachine.boot.support.BootStateMachineMonitor;
@@ -14,11 +15,15 @@ import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
+import org.springframework.statemachine.persist.StateMachineRuntimePersister;
 
 @Configuration
 @EnableStateMachineFactory
 public class StateMachineConfiguration
   extends StateMachineConfigurerAdapter<AppStates, AppEvents> {
+
+  @Autowired
+  private StateMachineRuntimePersister<AppStates, AppEvents, String> stateMachineRuntimePersister;
 
   private final BootStateMachineMonitor<AppStates, AppEvents> stateMachineMonitor;
   private final DeploymentGuards deploymentGuards;
@@ -49,7 +54,9 @@ public class StateMachineConfiguration
     StateMachineConfigurationConfigurer<AppStates, AppEvents> config
   ) throws Exception {
     config.withMonitoring().monitor(this.stateMachineMonitor);
-
+    config
+      .withPersistence()
+      .runtimePersister(this.stateMachineRuntimePersister);
     config.withConfiguration().autoStartup(false);
   }
 

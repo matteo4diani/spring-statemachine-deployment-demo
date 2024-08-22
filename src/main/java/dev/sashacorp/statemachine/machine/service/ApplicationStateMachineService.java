@@ -8,14 +8,25 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
+import org.springframework.statemachine.StateMachineContext;
+import org.springframework.statemachine.StateMachineException;
+import org.springframework.statemachine.StateMachinePersist;
 import org.springframework.statemachine.config.StateMachineFactory;
+import org.springframework.statemachine.data.jpa.JpaStateMachineRepository;
 import reactor.core.publisher.Mono;
 
 @Slf4j
 public class ApplicationStateMachineService
   implements CustomStateMachineService {
+
+  @Autowired
+  private StateMachinePersist<AppStates, AppEvents, String> stateMachinePersist;
+
+  @Autowired
+  private JpaStateMachineRepository jpaStateMachineRepository;
 
   private final StateMachineFactory<AppStates, AppEvents> stateMachineFactory;
 
@@ -31,6 +42,26 @@ public class ApplicationStateMachineService
   public StateMachine<AppStates, AppEvents> acquireStateMachine(
     String machineId
   ) {
+    log.info("Getting new machine from factory with id " + machineId);
+    StateMachine<AppStates, AppEvents> stateMachine = stateMachineFactory.getStateMachine(
+      machineId
+    );
+    try {
+      StateMachineContext<AppStates, AppEvents> stateMachineContext = stateMachinePersist.read(
+        machineId
+      );
+      stateMachine.stopReactively().block();
+      stateMachine
+        .getStateMachineAccessor()
+        .doWithAllRegions(function ->
+          function.resetStateMachineReactively(stateMachineContext).block()
+        );
+    } catch (Exception e) {
+      log.error("Error handling context", e);
+      throw new StateMachineException("Unable to read context from store", e);
+    }
+    stateMachines.put(machineId, stateMachine);
+
     if (doesNotContainStateMachine(machineId)) {
       putStateMachine(machineId);
     }
@@ -69,20 +100,12 @@ public class ApplicationStateMachineService
 
   @Override
   public void releaseStateMachine(String machineId) {
-    if (doesNotContainStateMachine(machineId)) {
-      return;
-    }
-
-    final var stateMachine = getStateMachine(machineId);
-
-    if (Objects.isNull(stateMachine)) {
-      this.stateMachines.remove(machineId);
-      return;
-    }
+    final var stateMachine = this.acquireStateMachine(machineId);
 
     if (AppStates.DELETED.equals(stateMachine.getState().getId())) {
       this.stateMachines.remove(machineId);
       stateMachine.stopReactively().block();
+      this.jpaStateMachineRepository.deleteById(machineId);
     }
   }
 
