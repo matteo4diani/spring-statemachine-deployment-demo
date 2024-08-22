@@ -16,13 +16,7 @@ public interface CustomStateMachineService
   @Override
   void releaseStateMachine(String machineId);
 
-  Optional<StateMachine<AppStates, AppEvents>> acquireExistingStateMachine(
-    String machineId
-  );
-
   void setApplication(String machineId);
-
-  Set<String> getStateMachineIds();
 
   StateMachine<AppStates, AppEvents> sendEvent(
     String machineId,

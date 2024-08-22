@@ -35,18 +35,11 @@ public class ApplicationController {
     this.deploymentService = deploymentService;
   }
 
-  @GetMapping
-  public ResponseEntity<Set<String>> findAllApplications() {
-    return ResponseEntity.of(
-      Optional.ofNullable(this.stateMachineService.getStateMachineIds())
-    );
-  }
-
   @GetMapping("/{id}")
   public ResponseEntity<String> getApplication(@PathVariable("id") String id) {
     return getStringResponseEntity(
       "State machine with id [{0}] has status [{1}]",
-      this.stateMachineService.acquireExistingStateMachine(id).orElseThrow()
+      this.stateMachineService.acquireStateMachine(id)
     );
   }
 

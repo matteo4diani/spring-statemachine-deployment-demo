@@ -16,8 +16,6 @@ public class DeploymentService {
   public StateMachine<AppStates, AppEvents> deployApplication(String id) {
     final var stateMachine = this.stateMachineService.acquireStateMachine(id);
 
-    this.stateMachineService.setApplication(id);
-
     this.stateMachineService.sendEvent(stateMachine.getId(), AppEvents.DEPLOY);
 
     return stateMachine;
