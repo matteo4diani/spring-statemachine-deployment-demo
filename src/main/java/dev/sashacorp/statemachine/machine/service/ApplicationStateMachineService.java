@@ -17,6 +17,8 @@ import org.springframework.statemachine.StateMachineContext;
 import org.springframework.statemachine.StateMachinePersist;
 import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.data.jpa.JpaStateMachineRepository;
+import org.springframework.statemachine.support.DefaultExtendedState;
+import org.springframework.statemachine.support.DefaultStateMachineContext;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -151,6 +153,38 @@ public class ApplicationStateMachineService
     }
 
     log.info("Events {} sent to machine [{}]", events, machineId);
+
+    return stateMachine;
+  }
+
+  @Override
+  public StateMachine<AppStates, AppEvents> restoreApplication(String machineId, AppStates state) {
+    log.info("💀 Restoring pre-existing app as state machine with id {} and state {}", machineId, state);
+
+    final var stateMachine = stateMachineFactory.getStateMachine(
+            machineId
+    );
+
+    stateMachine.stopReactively().block();
+
+    try {
+      this.setApplication(stateMachine);
+
+      stateMachine.startReactively().block();
+
+      stateMachine
+              .getStateMachineAccessor()
+              .doWithAllRegions(function ->
+                                        function.resetStateMachineReactively(
+                                                new DefaultStateMachineContext<>(state, null, null, new DefaultExtendedState())
+                                        ).block()
+              );
+
+      log.info("🚀 Pre-existing app restored as state machine with id {} and state {}", machineId, state);
+
+    } catch (Exception e) {
+      log.error("🔥 Error during pre-existing app state machine restoration with id {} and state {}", machineId, state);
+    }
 
     return stateMachine;
   }

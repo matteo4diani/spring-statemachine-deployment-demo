@@ -74,6 +74,17 @@ public class ApplicationController {
     );
   }
 
+  @PostMapping("/restore/{id}")
+  public ResponseEntity<String> restoreApplication(
+          @PathVariable("id") String id,
+          @RequestParam("state") AppStates state
+  ) {
+    return getStringResponseEntity(
+            "State machine with id [{0}] is restored to status [{1}]",
+            this.stateMachineService.restoreApplication(id, state)
+    );
+  }
+
   @PostMapping("/clean/{id}")
   public ResponseEntity<String> cleanApplication(
     @PathVariable("id") String id

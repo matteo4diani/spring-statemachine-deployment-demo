@@ -27,4 +27,6 @@ public interface CustomStateMachineService
     String machineId,
     AppEvents... events
   );
+
+  StateMachine<AppStates, AppEvents> restoreApplication(String machineId, AppStates state);
 }
