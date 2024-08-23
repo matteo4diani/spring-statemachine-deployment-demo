@@ -12,7 +12,7 @@ import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.statemachine.StateContext;
 
-@Slf4j
+@Slf4j(topic="🦄️Deployment Actions    ")
 public class DeploymentActions {
 
   private final KubernetesClient kubernetesClient;
@@ -35,7 +35,7 @@ public class DeploymentActions {
   }
 
   private void deploy(String id) {
-    log.info("Running deployment action for app [{}]", id);
+    log.info("🚚 Running deployment action for app [{}]", id);
 
     try {
       var runtimeBundle = V1Pod.newRuntimeBundle(id);
@@ -62,11 +62,11 @@ public class DeploymentActions {
       throw new RuntimeException(cause);
     }
 
-    log.info("Completed deployment action for app [{}]", id);
+    log.info("🚚 Completed deployment action for app [{}]", id);
   }
 
   private void delete(String id) {
-    log.info("Running deletion action for app [{}]", id);
+    log.info("🔫 Running deletion action for app [{}]", id);
 
     try {
       removeComponentAndSleepForDelay(id, AppComponents.UI);
@@ -74,11 +74,17 @@ public class DeploymentActions {
       removeComponentAndSleepForDelay(id, AppComponents.QUERY_SERVICE);
 
       removeComponentAndSleepForDelay(id, AppComponents.RUNTIME_BUNDLE);
+
+      removeAllComponents(id);
     } catch (InterruptedException cause) {
       throw new RuntimeException(cause);
     }
 
-    log.info("Completed deletion action for app [{}]", id);
+    log.info("🔫 Completed deletion action for app [{}]", id);
+  }
+
+  private void removeAllComponents(String id) {
+    this.kubernetesClient.removeAllNamespacedComponents(id);
   }
 
   private void addComponent(String id, V1Pod runtimeBundle) {

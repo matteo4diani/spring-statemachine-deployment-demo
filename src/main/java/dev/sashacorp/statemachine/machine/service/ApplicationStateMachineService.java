@@ -21,7 +21,7 @@ import org.springframework.statemachine.support.DefaultExtendedState;
 import org.springframework.statemachine.support.DefaultStateMachineContext;
 import reactor.core.publisher.Mono;
 
-@Slf4j
+@Slf4j(topic="🤖 State Machine Service")
 public class ApplicationStateMachineService
   implements CustomStateMachineService {
 
@@ -125,7 +125,7 @@ public class ApplicationStateMachineService
       log.error("🔥 Error during pre-existing app state machine restoration with id {} and state {}", machineId, state);
     }
 
-    simulatePreExistingKubernetesDeployment(machineId);
+    this.kubernetesClient.simulatePreExistingKubernetesDeployment(machineId);
 
     return acquireStateMachine(machineId);
   }
@@ -203,20 +203,5 @@ public class ApplicationStateMachineService
     log.info("Events {} sent to machine [{}]", events, machineId);
 
     return stateMachine;
-  }
-
-  private void simulatePreExistingKubernetesDeployment(String machineId) {
-    var runtimeBundle = V1Pod.newRuntimeBundle(machineId);
-    var queryService = V1Pod.newQueryService(machineId);
-    var ui = V1Pod.newUi(machineId);
-
-    runtimeBundle = runtimeBundle.updateStatus(PodStatus.RUNNING);
-    queryService = queryService.updateStatus(PodStatus.RUNNING);
-    ui = ui.updateStatus(PodStatus.RUNNING);
-
-    this.kubernetesClient.putNamespacedComponents(
-            machineId,
-            List.of(runtimeBundle, queryService, ui)
-    );
   }
 }

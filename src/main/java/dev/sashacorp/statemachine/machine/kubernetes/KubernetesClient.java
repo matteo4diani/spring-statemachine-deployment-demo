@@ -1,5 +1,6 @@
 package dev.sashacorp.statemachine.machine.kubernetes;
 
+import dev.sashacorp.statemachine.machine.kubernetes.model.PodStatus;
 import dev.sashacorp.statemachine.machine.kubernetes.model.V1Pod;
 import dev.sashacorp.statemachine.machine.model.application.AppComponents;
 import java.util.ArrayList;
@@ -56,5 +57,31 @@ public class KubernetesClient {
     this.applicationEventPublisher.publishEvent(
         KubernetesEvent.buildEvent(namespace)
       );
+  }
+
+  public void removeAllNamespacedComponents(String id) {
+    this.kubernetes.get(id).clear();
+    this.applicationEventPublisher.publishEvent(
+            KubernetesEvent.buildEvent(id)
+    );
+  }
+
+  public void simulatePreExistingKubernetesDeployment(String machineId) {
+    var runtimeBundle = V1Pod.newRuntimeBundle(machineId);
+    var queryService = V1Pod.newQueryService(machineId);
+    var ui = V1Pod.newUi(machineId);
+
+    runtimeBundle = runtimeBundle.updateStatus(PodStatus.RUNNING);
+    queryService = queryService.updateStatus(PodStatus.RUNNING);
+    ui = ui.updateStatus(PodStatus.RUNNING);
+
+    this.kubernetes.put(
+            machineId,
+            List.of(runtimeBundle, queryService, ui)
+    );
+  }
+
+  public boolean contains(String namespace) {
+    return this.kubernetes.containsKey(namespace);
   }
 }

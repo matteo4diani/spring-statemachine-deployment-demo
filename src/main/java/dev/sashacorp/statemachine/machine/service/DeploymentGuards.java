@@ -10,8 +10,11 @@ import dev.sashacorp.statemachine.machine.model.states.AppStates;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.statemachine.StateContext;
 
+@Slf4j(topic="🛡️Deployment Guards    ")
 public class DeploymentGuards {
 
   private final KubernetesClient kubernetesClient;
@@ -23,7 +26,10 @@ public class DeploymentGuards {
   public boolean isFullyDeployedGuard(
     StateContext<AppStates, AppEvents> context
   ) {
+
     final Application app = getAppFromContext(context);
+
+    log.info("👮🏽Verifying full deployment for app {}", app.id());
 
     final List<V1Pod> pods =
       this.kubernetesClient.getNamespacedComponents(app.id());
@@ -33,6 +39,7 @@ public class DeploymentGuards {
       .anyMatch(pod -> PodStatus.PENDING.equals(pod.status()));
 
     if (isAnyPodPending) {
+      log.info("🛑 App {} not fully deployed", app.id());
       return false;
     }
 
@@ -45,24 +52,42 @@ public class DeploymentGuards {
       .stream()
       .allMatch(pod -> PodStatus.RUNNING.equals(pod.status()));
 
-    return isEveryPodRunning && components.containsAll(app.components());
+    final var result = isEveryPodRunning && components.containsAll(app.components());
+
+    if (result) {
+      log.info("🏆App {} fully deployed!", app.id());
+    } else {
+      log.info("🛑 App {} not fully deployed!", app.id());
+    }
+    return result;
   }
 
   public boolean isFullyDeletedGuard(
     StateContext<AppStates, AppEvents> context
   ) {
+
     final Application app = getAppFromContext(context);
+
+    log.info("👮🏽Verifying full deletion for app {}", app.id());
 
     final List<V1Pod> pods =
       this.kubernetesClient.getNamespacedComponents(app.id());
 
-    return pods.isEmpty();
+    final var result = pods.isEmpty();
+
+    if (result) {
+      log.info("🏆App {} fully deleted!", app.id());
+    } else {
+      log.info("🛑 App {} not fully deleted!", app.id());
+    }
+
+    return result;
   }
 
   public boolean isNotFullyDeployedGuard(
     StateContext<AppStates, AppEvents> context
   ) {
-    return !isFullyDeployedGuard(context);
+    return false;
   }
 
   private Application getAppFromContext(
